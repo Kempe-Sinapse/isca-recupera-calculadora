@@ -10,28 +10,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import {
-  Lightbulb,
-  TrendingUp,
-  DollarSign,
-  AlertCircle,
   ArrowRight,
-  Info,
+  TrendingUp,
   BarChart3,
+  DollarSign,
   Sparkles,
-  MessageSquare,
+  AlertCircle,
   Zap,
   Target,
+  MessageSquare,
+  Info,
 } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { createClient } from "@/lib/supabase/client"
 
 // Types
 interface InputState {
+  monthlyVisits: number
+  checkoutRate: number
+  conversionRate: number
   productPrice: number
-  salesVolume: number
-  upsell1Price: number
-  upsell1Conv: number
-  upsell2Price: number
-  upsell2Conv: number
   cac: number
 }
 
@@ -40,6 +38,7 @@ interface Calculations {
   trueValuePerLead: number
   estimatedAbandonment: number
   monthlyLoss: number
+  annualLoss: number
   sunkCost: number
 }
 
@@ -73,7 +72,7 @@ function InfoTooltip({ text }: { text: string }) {
   return (
     <div className="group relative inline-block">
       <Info className="w-4 h-4 text-[#7cba10] cursor-help" />
-      <div className="invisible group-hover:visible absolute z-10 w-64 p-3 glass-card rounded-lg text-sm text-white -left-28 top-6 shadow-lg">
+      <div className="invisible group-hover:visible absolute z-10 w-64 p-3 glass-card rounded-lg text-sm text-white -left-28 top-6 shadow-lg border border-[#7cba10]/20 bg-[#0a0f0b]/95 backdrop-blur-md">
         {text}
       </div>
     </div>
@@ -88,38 +87,28 @@ function formatCurrency(value: number): string {
   }).format(value)
 }
 
-export default function RevenueRecoveryAudit() {
+export default function RevenueAudit() {
   const [step, setStep] = useState(0)
   const [inputs, setInputs] = useState<InputState>({
+    monthlyVisits: 0,
+    checkoutRate: 0,
+    conversionRate: 0,
     productPrice: 0,
-    salesVolume: 0,
-    upsell1Price: 0,
-    upsell1Conv: 10,
-    upsell2Price: 0,
-    upsell2Conv: 2,
     cac: 0,
   })
-  const [recoveryRate, setRecoveryRate] = useState(15)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    whatsapp: "",
-  })
+  const [recoveryRate, setRecoveryRate] = useState(10)
+  const [formData, setFormData] = useState({ name: "", email: "", whatsapp: "" })
+  const [leadId, setLeadId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Calculate metrics
   const calculations: Calculations = {
-    upsellPotential:
-      inputs.upsell1Price * (inputs.upsell1Conv / 100) + inputs.upsell2Price * (inputs.upsell2Conv / 100),
-    trueValuePerLead:
-      inputs.productPrice +
-      (inputs.upsell1Price * (inputs.upsell1Conv / 100) + inputs.upsell2Price * (inputs.upsell2Conv / 100)),
-    estimatedAbandonment: inputs.salesVolume * 2.33,
-    monthlyLoss:
-      inputs.salesVolume *
-      2.33 *
-      (inputs.productPrice +
-        (inputs.upsell1Price * (inputs.upsell1Conv / 100) + inputs.upsell2Price * (inputs.upsell2Conv / 100))),
-    sunkCost: inputs.salesVolume * 2.33 * (inputs.cac || inputs.productPrice * 0.3),
+    upsellPotential: 0,
+    trueValuePerLead: inputs.productPrice,
+    estimatedAbandonment: inputs.monthlyVisits * (1 - inputs.checkoutRate / 100),
+    monthlyLoss: inputs.monthlyVisits * (1 - inputs.checkoutRate / 100) * inputs.productPrice,
+    annualLoss: inputs.monthlyVisits * (1 - inputs.checkoutRate / 100) * inputs.productPrice * 12,
+    sunkCost: inputs.monthlyVisits * (1 - inputs.checkoutRate / 100) * (inputs.cac || inputs.productPrice * 0.3),
   }
 
   const recoveredRevenue = calculations.monthlyLoss * (recoveryRate / 100)
@@ -132,16 +121,93 @@ export default function RevenueRecoveryAudit() {
     exit: { x: -300, opacity: 0 },
   }
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 6))
+  const saveBusinessData = async () => {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from("leads")
+      .insert({
+        monthly_visits: inputs.monthlyVisits,
+        checkout_rate: inputs.checkoutRate,
+        conversion_rate: inputs.conversionRate,
+        product_price: inputs.productPrice,
+        cac: inputs.cac || null,
+        monthly_loss: calculations.monthlyLoss,
+        annual_loss: calculations.annualLoss,
+        true_value_per_lead: calculations.trueValuePerLead,
+      })
+      .select("id")
+      .single()
+
+    if (error) {
+      console.log("[v0] Error saving business data:", error)
+      return null
+    }
+
+    console.log("[v0] Lead created with ID:", data.id)
+    return data.id
+  }
+
+  const savePersonalData = async () => {
+    if (!leadId) {
+      console.log("[v0] No leadId found, cannot save personal data")
+      return false
+    }
+
+    const supabase = createClient()
+
+    const { error } = await supabase
+      .from("leads")
+      .update({
+        name: formData.name,
+        email: formData.email,
+        whatsapp: formData.whatsapp,
+        recovered_revenue: recoveredRevenue,
+        recovery_rate: recoveryRate,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", leadId)
+
+    if (error) {
+      console.log("[v0] Error saving personal data:", error)
+      return false
+    }
+
+    console.log("[v0] Lead updated with personal data")
+    return true
+  }
+
+  const nextStep = async () => {
+    if (step === 1) {
+      const id = await saveBusinessData()
+      if (id) {
+        setLeadId(id)
+      }
+    }
+    setStep((prev) => prev + 1)
+  }
+
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true)
+    const success = await savePersonalData()
+    setIsSubmitting(false)
+
+    if (success) {
+      alert("Formulário enviado! Em breve nossa equipe entrará em contato.")
+    } else {
+      alert("Ocorreu um erro. Por favor, tente novamente.")
+    }
+  }
+
   const updateInput = (field: keyof InputState, value: number) => {
     setInputs((prev) => ({ ...prev, [field]: value }))
   }
 
   return (
-    // Add ambient glow effects and futuristic background
-    <div className="min-h-screen bg-[#0a0f0b] tech-grid py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#7cba10] opacity-10 blur-3xl rounded-full" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#00ffc8] opacity-5 blur-3xl rounded-full" />
+    <div className="min-h-screen bg-[#0a0f0b] tech-grid py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#7cba10] opacity-10 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#00ffc8] opacity-5 blur-3xl rounded-full pointer-events-none" />
 
       <div className="max-w-4xl mx-auto relative z-10">
         {step > 0 && (
@@ -241,118 +307,99 @@ export default function RevenueRecoveryAudit() {
               <Card className="glass-card border-[#7cba10]/30 p-8 glow-primary">
                 <div className="flex items-center gap-3 mb-2">
                   <Target className="w-8 h-8 text-[#7cba10]" />
-                  <h2 className="text-3xl font-bold text-white">Calibrando o Simulador</h2>
+                  <h2 className="text-3xl font-bold text-white">Calibragem do Diagnóstico</h2>
                 </div>
-                <p className="text-white/60 mb-8 font-mono text-sm">INSIRA OS DADOS DA SUA OPERAÇÃO</p>
+                <p className="text-white/60 mb-8 font-mono text-sm max-w-2xl">
+                  ALIMENTE O SIMULADOR COM SEUS DADOS REAIS PARA CALCULARMOS O TAMANHO EXATO DO VAZAMENTO FINANCEIRO.
+                </p>
 
                 <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="productPrice" className="text-white mb-2 block font-semibold">
-                      Preço do Produto Principal (Front-end)
-                    </Label>
-                    <Input
-                      id="productPrice"
-                      type="number"
-                      placeholder="R$ 297"
-                      className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                      onChange={(e) => updateInput("productPrice", Number(e.target.value))}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="salesVolume" className="text-white mb-2 block font-semibold">
-                      Vendas Mensais (Quantidade)
-                    </Label>
-                    <Input
-                      id="salesVolume"
-                      type="number"
-                      placeholder="100"
-                      className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                      onChange={(e) => updateInput("salesVolume", Number(e.target.value))}
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Label htmlFor="upsell1Price" className="text-white font-semibold">
-                          Preço do Upsell 1 (Order Bump)
-                        </Label>
-                        <InfoTooltip text="Por que pedimos isso? Perder uma venda de front-end não é perder apenas R$ 297. É quebrar a corrente de lucros de toda a sua esteira." />
-                      </div>
-                      <Input
-                        id="upsell1Price"
-                        type="number"
-                        placeholder="R$ 97"
-                        className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                        onChange={(e) => updateInput("upsell1Price", Number(e.target.value))}
-                      />
+                  {/* Seção 1: Front-end */}
+                  <div className="bg-[#113313]/50 rounded-xl p-6 border border-[#375e36]/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ArrowRight className="w-5 h-5 text-[#7cba10]" />
+                      <h3 className="text-lg font-bold text-white">O Produto Isca (Front-end)</h3>
                     </div>
-                    <div>
-                      <Label htmlFor="upsell1Conv" className="text-white mb-2 block font-semibold">
-                        Taxa de Conversão (%)
-                      </Label>
-                      <Input
-                        id="upsell1Conv"
-                        type="number"
-                        defaultValue={10}
-                        className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                        onChange={(e) => updateInput("upsell1Conv", Number(e.target.value))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="upsell2Price" className="text-white mb-2 block font-semibold">
-                        Preço do Upsell 2 (High Ticket)
-                      </Label>
-                      <Input
-                        id="upsell2Price"
-                        type="number"
-                        placeholder="R$ 1.997"
-                        className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                        onChange={(e) => updateInput("upsell2Price", Number(e.target.value))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="upsell2Conv" className="text-white mb-2 block font-semibold">
-                        Taxa de Conversão (%)
-                      </Label>
-                      <Input
-                        id="upsell2Conv"
-                        type="number"
-                        defaultValue={2}
-                        className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                        onChange={(e) => updateInput("upsell2Conv", Number(e.target.value))}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="cac" className="text-white mb-2 block font-semibold">
-                      Custo por Venda (CAC/CPA) Aproximado
-                    </Label>
-                    <Input
-                      id="cac"
-                      type="number"
-                      placeholder="R$ 89"
-                      className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
-                      onChange={(e) => updateInput("cac", Number(e.target.value))}
-                    />
-                    <p className="text-xs text-white/40 mt-1 font-mono">
-                      Se deixar em 0, assumiremos 30% do preço do produto
+                    <p className="text-xs text-white/50 mb-4 font-mono leading-relaxed">
+                      Este é o seu ponto de entrada. A maioria dos abandonos acontece aqui, mas o prejuízo real é o que
+                      vem depois.
                     </p>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="monthlyVisits" className="text-white mb-2 block font-medium">
+                          Visitas Mensais (Qtd)
+                        </Label>
+                        <Input
+                          id="monthlyVisits"
+                          type="number"
+                          placeholder="Ex: 1000"
+                          className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all h-12"
+                          onChange={(e) => updateInput("monthlyVisits", Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="checkoutRate" className="text-white mb-2 block font-medium">
+                          Taxa de Checkout (%)
+                        </Label>
+                        <Input
+                          id="checkoutRate"
+                          type="number"
+                          placeholder="Ex: 20"
+                          className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all h-12"
+                          onChange={(e) => updateInput("checkoutRate", Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="conversionRate" className="text-white mb-2 block font-medium">
+                          Taxa de Conversão (%)
+                        </Label>
+                        <Input
+                          id="conversionRate"
+                          type="number"
+                          placeholder="Ex: 10"
+                          className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all h-12"
+                          onChange={(e) => updateInput("conversionRate", Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="productPrice" className="text-white mb-2 block font-medium">
+                          Preço do Produto (R$)
+                        </Label>
+                        <Input
+                          id="productPrice"
+                          type="number"
+                          placeholder="Ex: 297"
+                          className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all h-12"
+                          onChange={(e) => updateInput("productPrice", Number(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cac" className="text-white mb-2 block font-medium">
+                          Custo por Aquisição (CAC)
+                        </Label>
+                        <Input
+                          id="cac"
+                          type="number"
+                          placeholder="Ex: R$ 45,00"
+                          className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all h-12"
+                          onChange={(e) => updateInput("cac", Number(e.target.value))}
+                        />
+                        <p className="text-[10px] text-white/30 mt-2 font-mono uppercase tracking-wider">
+                          *Se deixar vazio, calcularemos uma média de mercado (30% do Front).
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <Button
                   onClick={nextStep}
-                  className="w-full mt-8 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] hover:from-[#6aa80e] hover:to-[#00e6b4] text-[#0a0f0b] font-bold glow-primary transition-all duration-300 hover:scale-[1.02]"
-                  disabled={!inputs.productPrice || !inputs.salesVolume}
+                  className="w-full mt-8 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] hover:from-[#6aa80e] hover:to-[#00e6b4] text-[#0a0f0b] font-bold glow-primary transition-all duration-300 hover:scale-[1.02] h-14 text-lg"
+                  disabled={!inputs.productPrice || !inputs.monthlyVisits || !inputs.checkoutRate}
                 >
                   Continuar Análise
-                  <ArrowRight className="ml-2 w-4 h-4" />
+                  <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Card>
             </motion.div>
@@ -397,7 +444,7 @@ export default function RevenueRecoveryAudit() {
                   </p>
                 </div>
 
-                <InsightCard icon={Lightbulb} title="O Conceito de LTV Invisível">
+                <InsightCard icon={AlertCircle} title="O Conceito de LTV Invisível">
                   Você não perdeu apenas o valor do primeiro produto. Estatisticamente, quem abandona leva embora o
                   potencial de lucro dos seus Upsells. Sua perda real por lead é{" "}
                   <strong className="text-[#7cba10]">{formatCurrency(calculations.trueValuePerLead)}</strong>, não{" "}
@@ -551,7 +598,6 @@ export default function RevenueRecoveryAudit() {
             </motion.div>
           )}
 
-          {/* STEP 5: Updated insights and call to action */}
           {step === 5 && (
             <motion.div
               key="step5"
@@ -591,7 +637,6 @@ export default function RevenueRecoveryAudit() {
             </motion.div>
           )}
 
-          {/* STEP 6: Updated final CTA with enhanced design */}
           {step === 6 && (
             <motion.div
               key="step6"
@@ -639,7 +684,7 @@ export default function RevenueRecoveryAudit() {
                       id="name"
                       type="text"
                       placeholder="Seu nome"
-                      className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
+                      className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
@@ -653,7 +698,7 @@ export default function RevenueRecoveryAudit() {
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
-                      className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
+                      className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     />
@@ -667,7 +712,7 @@ export default function RevenueRecoveryAudit() {
                       id="whatsapp"
                       type="tel"
                       placeholder="(11) 99999-9999"
-                      className="bg-[#0d1b0e] border-[#7cba10]/30 text-white focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
+                      className="bg-[#113313] border-[#375e36] text-white placeholder:text-white/20 focus:border-[#7cba10] focus:ring-[#7cba10]/50 transition-all"
                       value={formData.whatsapp}
                       onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                     />
@@ -675,12 +720,18 @@ export default function RevenueRecoveryAudit() {
                 </div>
 
                 <Button
-                  onClick={() => alert("Formulário enviado! Em breve nossa equipe entrará em contato.")}
+                  onClick={handleFinalSubmit}
                   className="w-full mt-8 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] hover:from-[#6aa80e] hover:to-[#00e6b4] text-[#0a0f0b] font-bold text-lg py-6 glow-primary-strong transition-all duration-300 hover:scale-[1.02]"
-                  disabled={!formData.name || !formData.email || !formData.whatsapp}
+                  disabled={!formData.name || !formData.email || !formData.whatsapp || isSubmitting}
                 >
-                  <Sparkles className="mr-2 w-5 h-5" />
-                  Receber Análise Completa
+                  {isSubmitting ? (
+                    <>Enviando...</>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 w-5 h-5" />
+                      Receber Análise Completa
+                    </>
+                  )}
                 </Button>
 
                 <p className="text-center text-white/40 text-sm mt-4 font-mono">100% GRATUITO • SEM COMPROMISSO</p>
