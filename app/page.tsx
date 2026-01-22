@@ -38,7 +38,8 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
   Legend,
-  Cell
+  Cell,
+  LabelList // <--- ADICIONADO AQUI
 } from "recharts"
 
 // --- TYPES ---
