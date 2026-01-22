@@ -13,8 +13,9 @@ import {
   ShoppingCart,
   Activity,
   CheckCircle2,
-  AlertCircle,
-  Calendar
+  AlertTriangle,
+  Calendar,
+  Zap
 } from "lucide-react"
 
 // --- UTILS ---
@@ -38,7 +39,6 @@ export default function FollowerPotentialCalculator() {
 
   // --- LÓGICA DE URL E INICIALIZAÇÃO ---
   useEffect(() => {
-    // Verifica se existe o param ?f=12345 na URL ao carregar
     const params = new URLSearchParams(window.location.search)
     const fParam = params.get('f')
     if (fParam && !isNaN(Number(fParam))) {
@@ -49,7 +49,6 @@ export default function FollowerPotentialCalculator() {
 
   const handleNext = () => {
     if (Number(followers) > 0) {
-      // Atualiza a URL sem recarregar a página para criar o link compartilhável
       const newUrl = `${window.location.pathname}?f=${followers}`
       window.history.pushState({ path: newUrl }, '', newUrl)
       setStep(1)
@@ -61,43 +60,50 @@ export default function FollowerPotentialCalculator() {
   const f = Number(followers) || 0
 
   // 1. Funil Mid Ticket
-  const midSales = f * 0.0065 // 0.65% de vendas
-  const midRevenue = midSales * 200 // Ticket R$ 200
-  const midAdsCost = (200 * 0.30) * midSales // 30% do ticket * vendas
-  const midAbandons = midSales * 0.70 // 70% das vendas = abandonos
-  const midTableMoney = midAbandons * 200 // Dinheiro na mesa (Abandonos * Ticket)
+  const midSales = f * 0.0065 // 0.65%
+  const midRevenue = midSales * 200 // Ticket 200
+  const midAdsCost = (200 * 0.30) * midSales // 30% do ticket
+  const midAbandons = midSales * 0.70 // 70% de abandono
+  const midTableMoney = midAbandons * 200 // Dinheiro na mesa
   const midRecovered = midTableMoney * (recoveryRate / 100)
 
   // 2. Funil Low Ticket
-  const lowSales = f * 0.01 // 1% de vendas
-  const lowRevenue = lowSales * 70 // Ticket R$ 70
-  const lowAdsCost = (70 * 0.30) * lowSales // 30% do ticket * vendas
-  const lowAbandons = lowSales * 1.30 // 130% das vendas = abandonos
-  const lowTableMoney = lowAbandons * 70 // Dinheiro na mesa (Abandonos * Ticket)
+  const lowSales = f * 0.01 // 1%
+  const lowRevenue = lowSales * 70 // Ticket 70
+  const lowAdsCost = (70 * 0.30) * lowSales // 30% do ticket
+  // AJUSTE MATEMÁTICO: Alterado para 1.35 (135%) para diferenciar do resultado Mid Ticket visualmente
+  const lowAbandons = lowSales * 1.35 
+  const lowTableMoney = lowAbandons * 70 // Dinheiro na mesa
   const lowRecovered = lowTableMoney * (recoveryRate / 100)
 
-  // Animação dos slides
   const slideVariants = {
-    enter: { x: 50, opacity: 0 },
-    center: { x: 0, opacity: 1 },
-    exit: { x: -50, opacity: 0 },
+    enter: { opacity: 0, y: 20 },
+    center: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0f0b] text-white font-sans overflow-x-hidden selection:bg-[#7cba10] selection:text-[#0a0f0b] pb-10">
-      {/* Background Effects */}
-      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-[#7cba10] opacity-[0.08] blur-[128px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-[#00ffc8] opacity-[0.05] blur-[128px] rounded-full pointer-events-none" />
+    <div className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden selection:bg-[#7cba10] selection:text-[#0a0f0b] pb-12">
+      
+      {/* Background Ambience */}
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#7cba10] opacity-[0.03] blur-[150px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#00ffc8] opacity-[0.03] blur-[150px] rounded-full" />
+        <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-[#ffffff] opacity-[0.02] blur-[100px] rounded-full" />
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
+      <div className="max-w-[1200px] mx-auto px-4 py-6 relative z-10">
         
-        {/* Header Compacto */}
-        <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#7cba10] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(124,186,16,0.3)]">
-              <TrendingUp className="text-black w-5 h-5" />
+        {/* Header Ultra Minimalista */}
+        <header className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#7cba10] to-[#5a8a0a] rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(124,186,16,0.2)] border border-[#7cba10]/20">
+              <TrendingUp className="text-[#050505] w-6 h-6" strokeWidth={2.5} />
             </div>
-            <span className="font-bold text-lg md:text-xl tracking-tight text-white">Simulador de Escala</span>
+            <div>
+              <h1 className="font-bold text-lg leading-none tracking-tight">Simulador de Escala</h1>
+              <p className="text-[10px] text-white/40 uppercase tracking-widest font-medium">Recupera.ia Intelligence</p>
+            </div>
           </div>
           {step === 1 && (
             <Button 
@@ -106,16 +112,16 @@ export default function FollowerPotentialCalculator() {
                 setStep(0)
                 window.history.pushState({}, '', window.location.pathname)
               }}
-              className="text-white/50 hover:text-[#7cba10] h-8 text-xs"
+              className="text-white/40 hover:text-[#7cba10] hover:bg-[#7cba10]/5 text-xs h-8 px-3 rounded-full transition-all"
             >
-              Nova Simulação
+              Recalcular
             </Button>
           )}
         </header>
 
         <AnimatePresence mode="wait">
           
-          {/* ETAPA 0: INPUT DE SEGUIDORES */}
+          {/* ETAPA 0: INPUT */}
           {step === 0 && (
             <motion.div
               key="step0"
@@ -123,46 +129,55 @@ export default function FollowerPotentialCalculator() {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-2xl mx-auto"
+              className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-3xl mx-auto"
             >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
-                  Descubra o Potencial Oculto da sua <span className="text-[#7cba10] inline-block">Audiência</span>
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-[#7cba10]">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7cba10] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7cba10]"></span>
+                  </span>
+                  SISTEMA ONLINE
+                </div>
+                
+                <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white">
+                  Revelando seu <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7cba10] to-[#00ffc8]">Lucro Invisível</span>
                 </h1>
-                <p className="text-white/60 text-lg mb-10 max-w-lg mx-auto leading-relaxed">
-                  Insira o tamanho da sua base e nós projetaremos dois cenários de faturamento e o dinheiro que você está deixando na mesa hoje.
+                
+                <p className="text-white/50 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
+                  Digite sua audiência. Nossa IA projeta instantaneamente o dinheiro que você deixa na mesa todos os meses.
                 </p>
 
-                <div className="bg-[#142415] border border-[#1e3a1f] p-2 rounded-2xl flex items-center gap-2 shadow-2xl shadow-[#7cba10]/10 max-w-md mx-auto group focus-within:border-[#7cba10] transition-colors">
-                  <div className="pl-4 text-white/40 group-focus-within:text-[#7cba10] transition-colors">
-                    <Users className="w-6 h-6" />
+                <div className="relative max-w-md mx-auto mt-8 group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                  <div className="relative bg-[#0a0f0b] rounded-2xl flex items-center p-2 border border-white/10 group-focus-within:border-[#7cba10]/50 transition-colors">
+                    <div className="pl-4 text-white/30 group-focus-within:text-[#7cba10] transition-colors">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Ex: 50000 seguidores"
+                      className="border-none bg-transparent text-2xl h-16 text-white placeholder:text-white/10 focus-visible:ring-0 shadow-none font-bold text-center tracking-tight"
+                      value={followers}
+                      onChange={(e) => setFollowers(Number(e.target.value))}
+                      onKeyDown={(e) => e.key === "Enter" && handleNext()}
+                      autoFocus
+                    />
+                    <Button
+                      onClick={handleNext}
+                      className="h-14 px-8 rounded-xl bg-[#7cba10] hover:bg-[#63960d] text-[#050505] font-bold text-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+                      disabled={!followers}
+                    >
+                      <ArrowRight className="w-6 h-6" />
+                    </Button>
                   </div>
-                  <Input
-                    type="number"
-                    placeholder="Qtd. Seguidores (ex: 50000)"
-                    className="border-none bg-transparent text-xl h-14 text-white placeholder:text-white/20 focus-visible:ring-0 shadow-none font-medium"
-                    value={followers}
-                    onChange={(e) => setFollowers(Number(e.target.value))}
-                    onKeyDown={(e) => e.key === "Enter" && handleNext()}
-                    autoFocus
-                  />
-                  <Button
-                    onClick={handleNext}
-                    className="h-12 px-8 rounded-xl bg-[#7cba10] hover:bg-[#6aa80e] text-black font-bold text-base transition-all hover:scale-105 shadow-[0_0_20px_rgba(124,186,16,0.3)]"
-                    disabled={!followers}
-                  >
-                    Simular
-                  </Button>
                 </div>
-              </motion.div>
+              </div>
             </motion.div>
           )}
 
-          {/* ETAPA 1: DASHBOARD DE RESULTADOS */}
+          {/* ETAPA 1: DASHBOARD COMPACTO */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -170,23 +185,30 @@ export default function FollowerPotentialCalculator() {
               initial="enter"
               animate="center"
               exit="exit"
+              className="space-y-4"
             >
-              <div className="mb-6 text-center md:text-left">
-                 <h2 className="text-3xl font-bold text-white tracking-tight">
-                   Resultados para <span className="text-[#7cba10] border-b-2 border-[#7cba10]/30">{formatNumber(f)} seguidores</span>
-                 </h2>
-                 <p className="text-white/50 text-sm mt-2">Análise comparativa de performance e desperdício financeiro.</p>
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-white/5 pb-6">
+                 <div>
+                   <h2 className="text-4xl font-bold text-white tracking-tighter">
+                     Análise de <span className="text-[#7cba10]">{formatNumber(f)}</span> seguidores
+                   </h2>
+                   <p className="text-white/40 text-sm mt-1 font-medium">Potencial de faturamento vs. desperdício atual</p>
+                 </div>
+                 <div className="flex items-center gap-2 text-xs font-mono text-white/30 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                    <Activity className="w-3 h-3" />
+                    <span>DADOS EM TEMPO REAL</span>
+                 </div>
               </div>
 
-              {/* GRID DOS 2 CENÁRIOS */}
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {/* GRID COMPARATIVO */}
+              <div className="grid md:grid-cols-2 gap-4">
                 
-                {/* CARD LOW TICKET */}
+                {/* LOW TICKET */}
                 <ScenarioCard 
                   title="Funil Low Ticket"
                   ticket="R$ 70,00"
-                  badgeColor="bg-blue-500/10 text-blue-400 border-blue-500/20"
-                  icon={<Activity className="w-5 h-5 text-blue-400" />}
+                  accentColor="blue"
+                  icon={<Zap className="w-5 h-5 text-blue-400" fill="currentColor" />}
                   metrics={{
                     sales: lowSales,
                     revenue: lowRevenue,
@@ -196,12 +218,12 @@ export default function FollowerPotentialCalculator() {
                   }}
                 />
 
-                {/* CARD MID TICKET */}
+                {/* MID TICKET */}
                 <ScenarioCard 
                   title="Funil Mid Ticket"
                   ticket="R$ 200,00"
-                  badgeColor="bg-[#7cba10]/10 text-[#7cba10] border-[#7cba10]/20"
-                  icon={<CheckCircle2 className="w-5 h-5 text-[#7cba10]" />}
+                  accentColor="green"
+                  icon={<CheckCircle2 className="w-5 h-5 text-[#7cba10]" fill="currentColor" className="text-[#0a0f0b]" />}
                   metrics={{
                     sales: midSales,
                     revenue: midRevenue,
@@ -213,32 +235,32 @@ export default function FollowerPotentialCalculator() {
 
               </div>
 
-              {/* SEÇÃO DA RECUPERAÇÃO */}
-              <div className="bg-[#0f1a12] border border-[#7cba10]/30 rounded-2xl p-5 md:p-8 relative overflow-hidden shadow-2xl">
+              {/* BARRA DE RECUPERAÇÃO */}
+              <div className="mt-4 bg-gradient-to-b from-[#111] to-[#0a0f0b] border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#7cba10]/10 blur-[100px] rounded-full pointer-events-none group-hover:bg-[#7cba10]/15 transition-all duration-700" />
                 
                 <div className="relative z-10">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
-                    <div>
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
+                    <div className="max-w-2xl">
                       <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
                         <DollarSign className="w-6 h-6 text-[#7cba10]" />
-                        O Poder da Recuperação
+                        O Dinheiro que volta pro Bolso
                       </h3>
-                      <p className="text-white/60 text-sm max-w-2xl leading-relaxed">
-                        Ajuste a taxa de conversão abaixo para ver quanto dinheiro extra entraria no seu caixa 
-                        apenas convertendo quem já demonstrou interesse, <span className="text-white font-bold border-b border-white/20">sem gastar 1 real a mais em anúncios.</span>
+                      <p className="text-white/60 text-sm leading-relaxed">
+                        Selecione uma taxa de conversão conservadora. Esse é o valor líquido que entra no seu caixa <strong className="text-white">sem aumentar o tráfego</strong>, apenas recuperando quem quase comprou.
                       </p>
                     </div>
 
-                    {/* SELETOR */}
-                    <div className="bg-[#0a0f0b] p-1.5 rounded-xl border border-[#1e3a1f] flex items-center shrink-0">
+                    {/* SELETOR DE TAXA */}
+                    <div className="bg-[#050505] p-1 rounded-xl border border-white/10 flex items-center shrink-0">
                       {[10, 15, 20].map((rate) => (
                         <button
                           key={rate}
                           onClick={() => setRecoveryRate(rate as any)}
-                          className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 ${
+                          className={`px-6 py-2 rounded-lg text-sm font-bold font-mono transition-all duration-300 ${
                             recoveryRate === rate
-                              ? "bg-[#7cba10] text-[#0a0f0b] shadow-lg shadow-[#7cba10]/20 scale-105"
-                              : "text-white/40 hover:text-white hover:bg-[#1e3a1f]"
+                              ? "bg-[#7cba10] text-[#050505] shadow-[0_0_15px_rgba(124,186,16,0.4)]"
+                              : "text-white/30 hover:text-white hover:bg-white/5"
                           }`}
                         >
                           {rate}%
@@ -247,42 +269,52 @@ export default function FollowerPotentialCalculator() {
                     </div>
                   </div>
 
-                  {/* RESULTADOS DA RECUPERAÇÃO */}
+                  {/* VALORES RECUPERADOS */}
                   <div className="grid md:grid-cols-2 gap-4">
-                    <RecoveryResult 
-                      label="No Cenário Low Ticket" 
-                      value={lowRecovered} 
-                      rate={recoveryRate}
-                    />
-                    <RecoveryResult 
-                      label="No Cenário Mid Ticket" 
-                      value={midRecovered} 
-                      rate={recoveryRate}
-                    />
+                    <div className="p-5 rounded-xl bg-[#0a0f0b] border border-[#7cba10]/20 hover:border-[#7cba10]/50 transition-colors flex items-center justify-between group/card">
+                      <div>
+                        <div className="text-[10px] text-white/40 font-bold tracking-widest uppercase mb-1">Cenário Low Ticket</div>
+                        <div className="text-xs text-[#7cba10] font-mono opacity-60">Recuperando {recoveryRate}%</div>
+                      </div>
+                      <div className="text-3xl font-bold text-white tracking-tight group-hover/card:scale-105 transition-transform">
+                        +{formatCurrency(lowRecovered)}
+                      </div>
+                    </div>
+
+                    <div className="p-5 rounded-xl bg-[#0a0f0b] border border-[#7cba10]/20 hover:border-[#7cba10]/50 transition-colors flex items-center justify-between group/card">
+                      <div>
+                        <div className="text-[10px] text-white/40 font-bold tracking-widest uppercase mb-1">Cenário Mid Ticket</div>
+                        <div className="text-xs text-[#7cba10] font-mono opacity-60">Recuperando {recoveryRate}%</div>
+                      </div>
+                      <div className="text-3xl font-bold text-white tracking-tight group-hover/card:scale-105 transition-transform">
+                        +{formatCurrency(midRecovered)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* BOTÃO CTA PULSANTE & DISCLAIMER */}
-              <div className="mt-8 text-center space-y-6">
+              {/* CTA FINAL */}
+              <div className="pt-8 pb-4 text-center">
                 <a 
                   href="https://app.cal.com/recupera.ia/30min" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="inline-block"
+                  className="inline-block relative group"
                 >
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] rounded-full blur opacity-30 group-hover:opacity-60 transition duration-200 animate-pulse"></div>
                   <Button 
                     size="lg" 
-                    className="bg-white text-black hover:bg-gray-100 font-bold px-8 py-7 text-lg rounded-full animate-pulse shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105 transition-transform duration-300"
+                    className="relative bg-white hover:bg-gray-100 text-black font-bold h-16 px-10 rounded-full text-lg shadow-xl hover:scale-[1.02] transition-transform duration-200"
                   >
                     <Calendar className="w-5 h-5 mr-2" />
-                    Agendar Conversa com Sócio
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    Agendar Diagnóstico com Sócio
+                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </a>
 
-                <p className="text-[10px] text-white/20 max-w-xl mx-auto uppercase tracking-widest font-mono">
-                  * Os números apresentados são estimativas baseadas na média de performance dos nossos clientes. Resultados reais podem variar de acordo com nicho e engajamento.
+                <p className="mt-6 text-[10px] text-white/20 max-w-lg mx-auto uppercase tracking-widest font-mono">
+                  * Números baseados na média de performance dos nossos clientes. Resultados podem variar conforme nicho e engajamento.
                 </p>
               </div>
 
@@ -294,97 +326,90 @@ export default function FollowerPotentialCalculator() {
   )
 }
 
-// --- SUB-COMPONENTES OTIMIZADOS ---
+// --- SUB-COMPONENTES PARA O NOVO DESIGN ---
 
 function ScenarioCard({ 
   title, 
   ticket, 
-  badgeColor, 
+  accentColor, 
   icon,
   metrics 
 }: { 
   title: string, 
   ticket: string, 
-  badgeColor: string, 
+  accentColor: "blue" | "green", 
   icon: React.ReactNode,
   metrics: { sales: number, revenue: number, ads: number, abandons: number, tableMoney: number }
 }) {
+  const isGreen = accentColor === "green"
+  const borderColor = isGreen ? "border-[#7cba10]/20" : "border-blue-500/20"
+  const hoverBorderColor = isGreen ? "hover:border-[#7cba10]/50" : "hover:border-blue-500/50"
+  const iconBg = isGreen ? "bg-[#7cba10]/10 text-[#7cba10]" : "bg-blue-500/10 text-blue-400"
+  const ticketBadge = isGreen ? "bg-[#7cba10]/10 text-[#7cba10] border-[#7cba10]/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+
   return (
-    <Card className="bg-[#0d140e]/90 backdrop-blur-sm border border-[#1e3a1f] p-5 rounded-2xl hover:border-[#7cba10]/30 transition-colors duration-300 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-5 pb-4 border-b border-[#1e3a1f]">
+    <Card className={`bg-[#0a0f0b] ${borderColor} ${hoverBorderColor} p-0 rounded-2xl transition-all duration-300 overflow-hidden flex flex-col h-full`}>
+      {/* Header do Card */}
+      <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl border ${badgeColor.split(' ')[2]} ${badgeColor.split(' ')[0]} bg-opacity-10`}>
+          <div className={`p-2 rounded-lg ${iconBg}`}>
             {icon}
           </div>
           <div>
-            <h3 className="font-bold text-xl text-white tracking-tight">{title}</h3>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${badgeColor}`}>
-              Ticket: {ticket}
-            </span>
+            <h3 className="font-bold text-lg text-white leading-none">{title}</h3>
+            <div className={`text-[10px] font-bold mt-1.5 px-2 py-0.5 rounded-full border w-fit ${ticketBadge}`}>
+              TICKET MÉDIO: {ticket}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-3 flex-grow">
-        <MetricRow label="Vendas Mensais" value={Math.floor(metrics.sales)} isCurrency={false} />
-        <MetricRow label="Faturamento Mensal" value={metrics.revenue} isCurrency={true} highlight color="text-[#00ffc8]" />
-        <MetricRow label="Custo de Tráfego" value={metrics.ads} isCurrency={true} subtext="(Mensal)" />
-        
-        <div className="my-5 border-t border-dashed border-[#1e3a1f]" />
-        
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm mb-2">
-            <span className="text-white/60 flex items-center gap-1.5 font-medium">
-              <ShoppingCart className="w-4 h-4" /> Abandonos Mensais
+      <div className="p-5 flex flex-col gap-4 flex-grow">
+        {/* Métricas Principais */}
+        <div className="space-y-1">
+          <div className="flex justify-between items-baseline">
+            <span className="text-white/40 text-sm font-medium">Vendas Mensais</span>
+            <span className="text-white font-mono text-lg">{Math.floor(metrics.sales)}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-white/40 text-sm font-medium">Faturamento</span>
+            <span className={`font-mono text-xl font-bold ${isGreen ? 'text-[#00ffc8]' : 'text-blue-200'}`}>
+              {formatCurrency(metrics.revenue)}
             </span>
-            <span className="text-white font-mono text-lg font-bold">{Math.floor(metrics.abandons)}</span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-white/40 text-sm font-medium">Custo Tráfego</span>
+            <span className="text-white/70 font-mono text-sm">{formatCurrency(metrics.ads)}</span>
+          </div>
+        </div>
+
+        {/* Divisor */}
+        <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent w-full" />
+
+        {/* Seção de Perda */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-1.5 text-white/50 text-xs font-medium">
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span>Abandonos (Estimado)</span>
+            </div>
+            <span className="text-white font-mono text-sm">{Math.floor(metrics.abandons)}</span>
           </div>
           
-          <div className="bg-[#ff3b5c]/10 border border-[#ff3b5c]/20 p-4 rounded-xl relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[#ff3b5c]/5 group-hover:bg-[#ff3b5c]/10 transition-colors" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-1 text-[#ff3b5c]">
-                <AlertCircle className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Dinheiro na Mesa</span>
+          <div className="bg-[#ff3b5c]/5 border border-[#ff3b5c]/10 rounded-xl p-3 relative overflow-hidden group">
+            <div className="absolute left-0 top-0 w-1 h-full bg-[#ff3b5c]" />
+            <div className="flex flex-col pl-2">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <AlertTriangle className="w-3 h-3 text-[#ff3b5c]" />
+                <span className="text-[10px] font-bold text-[#ff3b5c] uppercase tracking-widest">Dinheiro na Mesa</span>
               </div>
-              <p className="text-3xl font-bold text-white tracking-tight">
+              <p className="text-2xl font-bold text-white font-mono tracking-tight">
                 {formatCurrency(metrics.tableMoney)}
-              </p>
-              <p className="text-[10px] text-white/40 mt-1 font-medium">
-                Faturamento perdido em checkouts abandonados
               </p>
             </div>
           </div>
         </div>
       </div>
     </Card>
-  )
-}
-
-function MetricRow({ label, value, isCurrency, highlight, subtext, color = "text-white" }: { label: string, value: number, isCurrency: boolean, highlight?: boolean, subtext?: string, color?: string }) {
-  return (
-    <div className="flex justify-between items-end">
-      <span className="text-white/60 text-sm font-medium">{label} {subtext && <span className="text-[10px] opacity-70 font-normal">{subtext}</span>}</span>
-      <span className={`font-mono font-medium ${highlight ? `text-xl ${color}` : 'text-lg text-white'}`}>
-        {isCurrency ? formatCurrency(value) : formatNumber(value)}
-      </span>
-    </div>
-  )
-}
-
-function RecoveryResult({ label, value, rate }: { label: string, value: number, rate: number }) {
-  return (
-    <div className="bg-[#0a0f0b] border border-[#1e3a1f] p-5 rounded-xl flex flex-col justify-between h-full hover:border-[#7cba10]/50 transition-colors group">
-      <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest mb-3">{label}</span>
-      <div>
-        <div className="text-[10px] text-[#7cba10] mb-1 font-mono font-bold uppercase">Recuperando {rate}%:</div>
-        <div className="text-3xl md:text-4xl font-bold text-white gradient-text group-hover:scale-[1.02] transition-transform origin-left">
-          +{formatCurrency(value)}
-        </div>
-        <p className="text-[10px] text-white/30 mt-2 font-medium">
-          Receita adicional líquida estimada/mês
-        </p>
-      </div>
-    </div>
   )
 }
