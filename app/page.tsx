@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Calendar,
-  Zap
+  Zap,
+  Target
 } from "lucide-react"
 
 // --- UTILS ---
@@ -71,8 +72,7 @@ export default function FollowerPotentialCalculator() {
   const lowSales = f * 0.01 // 1%
   const lowRevenue = lowSales * 70 // Ticket 70
   const lowAdsCost = (70 * 0.30) * lowSales // 30% do ticket
-  // AJUSTE MATEMÁTICO: Alterado para 1.35 (135%) para diferenciar do resultado Mid Ticket visualmente
-  const lowAbandons = lowSales * 1.35 
+  const lowAbandons = lowSales * 1.35 // 135% de abandono (ajustado)
   const lowTableMoney = lowAbandons * 70 // Dinheiro na mesa
   const lowRecovered = lowTableMoney * (recoveryRate / 100)
 
@@ -92,7 +92,8 @@ export default function FollowerPotentialCalculator() {
         <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-[#ffffff] opacity-[0.02] blur-[100px] rounded-full" />
       </div>
 
-      <div className="max-w-[1200px] mx-auto px-4 py-6 relative z-10">
+      {/* Container reduzido para max-w-5xl para cartões mais estreitos */}
+      <div className="max-w-5xl mx-auto px-4 py-6 relative z-10">
         
         {/* Header Ultra Minimalista */}
         <header className="flex items-center justify-between mb-10">
@@ -189,14 +190,10 @@ export default function FollowerPotentialCalculator() {
             >
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-white/5 pb-6">
                  <div>
-                   <h2 className="text-4xl font-bold text-white tracking-tighter">
+                   <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tighter">
                      Análise de <span className="text-[#7cba10]">{formatNumber(f)}</span> seguidores
                    </h2>
                    <p className="text-white/40 text-sm mt-1 font-medium">Potencial de faturamento vs. desperdício atual</p>
-                 </div>
-                 <div className="flex items-center gap-2 text-xs font-mono text-white/30 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                    <Activity className="w-3 h-3" />
-                    <span>DADOS EM TEMPO REAL</span>
                  </div>
               </div>
 
@@ -223,7 +220,8 @@ export default function FollowerPotentialCalculator() {
                   title="Funil Mid Ticket"
                   ticket="R$ 200,00"
                   accentColor="green"
-                  icon={<CheckCircle2 className="w-5 h-5 text-[#7cba10]" fill="currentColor" className="text-[#0a0f0b]" />}
+                  // Ícone adicionado aqui: Target
+                  icon={<Target className="w-5 h-5 text-[#7cba10]" />}
                   metrics={{
                     sales: midSales,
                     revenue: midRevenue,
@@ -241,31 +239,36 @@ export default function FollowerPotentialCalculator() {
                 
                 <div className="relative z-10">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
-                    <div className="max-w-2xl">
+                    <div className="max-w-xl">
                       <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
                         <DollarSign className="w-6 h-6 text-[#7cba10]" />
                         O Dinheiro que volta pro Bolso
                       </h3>
                       <p className="text-white/60 text-sm leading-relaxed">
-                        Selecione uma taxa de conversão conservadora. Esse é o valor líquido que entra no seu caixa <strong className="text-white">sem aumentar o tráfego</strong>, apenas recuperando quem quase comprou.
+                        Selecione uma taxa conservadora. Esse é o valor líquido que entra no seu caixa <strong className="text-white">sem aumentar o tráfego</strong>, apenas recuperando quem quase comprou.
                       </p>
                     </div>
 
-                    {/* SELETOR DE TAXA */}
-                    <div className="bg-[#050505] p-1 rounded-xl border border-white/10 flex items-center shrink-0">
-                      {[10, 15, 20].map((rate) => (
-                        <button
-                          key={rate}
-                          onClick={() => setRecoveryRate(rate as any)}
-                          className={`px-6 py-2 rounded-lg text-sm font-bold font-mono transition-all duration-300 ${
-                            recoveryRate === rate
-                              ? "bg-[#7cba10] text-[#050505] shadow-[0_0_15px_rgba(124,186,16,0.4)]"
-                              : "text-white/30 hover:text-white hover:bg-white/5"
-                          }`}
-                        >
-                          {rate}%
-                        </button>
-                      ))}
+                    {/* SELETOR DE TAXA COM LABEL */}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest">
+                        Taxa de Conversão
+                      </span>
+                      <div className="bg-[#050505] p-1 rounded-xl border border-white/10 flex items-center">
+                        {[10, 15, 20].map((rate) => (
+                          <button
+                            key={rate}
+                            onClick={() => setRecoveryRate(rate as any)}
+                            className={`px-6 py-2 rounded-lg text-sm font-bold font-mono transition-all duration-300 ${
+                              recoveryRate === rate
+                                ? "bg-[#7cba10] text-[#050505] shadow-[0_0_15px_rgba(124,186,16,0.4)]"
+                                : "text-white/30 hover:text-white hover:bg-white/5"
+                            }`}
+                          >
+                            {rate}%
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -276,7 +279,7 @@ export default function FollowerPotentialCalculator() {
                         <div className="text-[10px] text-white/40 font-bold tracking-widest uppercase mb-1">Cenário Low Ticket</div>
                         <div className="text-xs text-[#7cba10] font-mono opacity-60">Recuperando {recoveryRate}%</div>
                       </div>
-                      <div className="text-3xl font-bold text-white tracking-tight group-hover/card:scale-105 transition-transform">
+                      <div className="text-4xl font-bold text-white tracking-tight group-hover/card:scale-105 transition-transform">
                         +{formatCurrency(lowRecovered)}
                       </div>
                     </div>
@@ -286,7 +289,7 @@ export default function FollowerPotentialCalculator() {
                         <div className="text-[10px] text-white/40 font-bold tracking-widest uppercase mb-1">Cenário Mid Ticket</div>
                         <div className="text-xs text-[#7cba10] font-mono opacity-60">Recuperando {recoveryRate}%</div>
                       </div>
-                      <div className="text-3xl font-bold text-white tracking-tight group-hover/card:scale-105 transition-transform">
+                      <div className="text-4xl font-bold text-white tracking-tight group-hover/card:scale-105 transition-transform">
                         +{formatCurrency(midRecovered)}
                       </div>
                     </div>
@@ -326,7 +329,7 @@ export default function FollowerPotentialCalculator() {
   )
 }
 
-// --- SUB-COMPONENTES PARA O NOVO DESIGN ---
+// --- SUB-COMPONENTES OTIMIZADOS ---
 
 function ScenarioCard({ 
   title, 
@@ -369,17 +372,17 @@ function ScenarioCard({
         <div className="space-y-1">
           <div className="flex justify-between items-baseline">
             <span className="text-white/40 text-sm font-medium">Vendas Mensais</span>
-            <span className="text-white font-mono text-lg">{Math.floor(metrics.sales)}</span>
+            <span className="text-white font-mono text-xl">{Math.floor(metrics.sales)}</span>
           </div>
           <div className="flex justify-between items-baseline">
             <span className="text-white/40 text-sm font-medium">Faturamento</span>
-            <span className={`font-mono text-xl font-bold ${isGreen ? 'text-[#00ffc8]' : 'text-blue-200'}`}>
+            <span className={`font-mono text-2xl font-bold ${isGreen ? 'text-[#00ffc8]' : 'text-blue-200'}`}>
               {formatCurrency(metrics.revenue)}
             </span>
           </div>
           <div className="flex justify-between items-baseline">
             <span className="text-white/40 text-sm font-medium">Custo Tráfego</span>
-            <span className="text-white/70 font-mono text-sm">{formatCurrency(metrics.ads)}</span>
+            <span className="text-white/70 font-mono text-lg">{formatCurrency(metrics.ads)}</span>
           </div>
         </div>
 
@@ -393,7 +396,7 @@ function ScenarioCard({
               <ShoppingCart className="w-3.5 h-3.5" />
               <span>Abandonos (Estimado)</span>
             </div>
-            <span className="text-white font-mono text-sm">{Math.floor(metrics.abandons)}</span>
+            <span className="text-white font-mono text-lg">{Math.floor(metrics.abandons)}</span>
           </div>
           
           <div className="bg-[#ff3b5c]/5 border border-[#ff3b5c]/10 rounded-xl p-3 relative overflow-hidden group">
@@ -403,7 +406,7 @@ function ScenarioCard({
                 <AlertTriangle className="w-3 h-3 text-[#ff3b5c]" />
                 <span className="text-[10px] font-bold text-[#ff3b5c] uppercase tracking-widest">Dinheiro na Mesa</span>
               </div>
-              <p className="text-2xl font-bold text-white font-mono tracking-tight">
+              <p className="text-3xl font-bold text-white font-mono tracking-tight">
                 {formatCurrency(metrics.tableMoney)}
               </p>
             </div>
