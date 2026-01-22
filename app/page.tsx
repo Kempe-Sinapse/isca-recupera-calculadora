@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   Calendar,
   Zap,
-  Target
+  Target,
+  User
 } from "lucide-react"
 
 // --- UTILS ---
@@ -36,12 +37,19 @@ function formatNumber(value: number): string {
 export default function FollowerPotentialCalculator() {
   const [step, setStep] = useState(0)
   const [followers, setFollowers] = useState<number | "">("")
+  const [name, setName] = useState("")
   const [recoveryRate, setRecoveryRate] = useState<10 | 15 | 20>(15)
 
   // --- LÓGICA DE URL E INICIALIZAÇÃO ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const fParam = params.get('f')
+    const nParam = params.get('n')
+    
+    if (nParam) {
+      setName(nParam)
+    }
+
     if (fParam && !isNaN(Number(fParam))) {
       setFollowers(Number(fParam))
       setStep(1)
@@ -49,8 +57,8 @@ export default function FollowerPotentialCalculator() {
   }, [])
 
   const handleNext = () => {
-    if (Number(followers) > 0) {
-      const newUrl = `${window.location.pathname}?f=${followers}`
+    if (Number(followers) > 0 && name.trim() !== "") {
+      const newUrl = `${window.location.pathname}?f=${followers}&n=${encodeURIComponent(name)}`
       window.history.pushState({ path: newUrl }, '', newUrl)
       setStep(1)
     }
@@ -72,7 +80,7 @@ export default function FollowerPotentialCalculator() {
   const lowSales = f * 0.01 // 1%
   const lowRevenue = lowSales * 70 // Ticket 70
   const lowAdsCost = (70 * 0.30) * lowSales // 30% do ticket
-  const lowAbandons = lowSales * 1.35 // 135% de abandono (ajustado)
+  const lowAbandons = lowSales * 1.35 // 135% de abandono
   const lowTableMoney = lowAbandons * 70 // Dinheiro na mesa
   const lowRecovered = lowTableMoney * (recoveryRate / 100)
 
@@ -132,46 +140,67 @@ export default function FollowerPotentialCalculator() {
               exit="exit"
               className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-3xl mx-auto"
             >
-              <div className="space-y-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-[#7cba10]">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7cba10] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7cba10]"></span>
-                  </span>
-                  SISTEMA ONLINE
+              <div className="space-y-8 w-full">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-[#7cba10] mx-auto">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7cba10] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#7cba10]"></span>
+                    </span>
+                    SISTEMA ONLINE
+                  </div>
+                  
+                  <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white leading-tight">
+                    Revelando seu <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7cba10] to-[#00ffc8]">Lucro Invisível</span>
+                  </h1>
+                  
+                  <p className="text-white/50 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
+                    Digite seus dados abaixo. Nossa IA projeta instantaneamente o dinheiro que você deixa na mesa todos os meses.
+                  </p>
                 </div>
-                
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white">
-                  Revelando seu <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#7cba10] to-[#00ffc8]">Lucro Invisível</span>
-                </h1>
-                
-                <p className="text-white/50 text-lg md:text-xl max-w-xl mx-auto leading-relaxed">
-                  Digite sua audiência. Nossa IA projeta instantaneamente o dinheiro que você deixa na mesa todos os meses.
-                </p>
 
-                <div className="relative max-w-md mx-auto mt-8 group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
-                  <div className="relative bg-[#0a0f0b] rounded-2xl flex items-center p-2 border border-white/10 group-focus-within:border-[#7cba10]/50 transition-colors">
-                    <div className="pl-4 text-white/30 group-focus-within:text-[#7cba10] transition-colors">
-                      <Users className="w-6 h-6" />
+                <div className="relative max-w-md mx-auto group space-y-3">
+                   {/* Input Nome */}
+                   <div className="relative bg-[#0a0f0b] rounded-xl flex items-center p-1 border border-white/10 focus-within:border-[#7cba10]/50 transition-colors">
+                    <div className="pl-4 text-white/30">
+                      <User className="w-5 h-5" />
                     </div>
                     <Input
-                      type="number"
-                      placeholder="Ex: 50000 seguidores"
-                      className="border-none bg-transparent text-2xl h-16 text-white placeholder:text-white/10 focus-visible:ring-0 shadow-none font-bold text-center tracking-tight"
-                      value={followers}
-                      onChange={(e) => setFollowers(Number(e.target.value))}
-                      onKeyDown={(e) => e.key === "Enter" && handleNext()}
+                      type="text"
+                      placeholder="Seu primeiro nome"
+                      className="border-none bg-transparent text-lg h-12 text-white placeholder:text-white/20 focus-visible:ring-0 shadow-none font-medium tracking-tight"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && document.getElementById("followers-input")?.focus()}
                       autoFocus
                     />
-                    <Button
-                      onClick={handleNext}
-                      className="h-14 px-8 rounded-xl bg-[#7cba10] hover:bg-[#63960d] text-[#050505] font-bold text-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-                      disabled={!followers}
-                    >
-                      <ArrowRight className="w-6 h-6" />
-                    </Button>
+                  </div>
+
+                  {/* Input Seguidores + Botão */}
+                  <div className="relative">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#7cba10] to-[#00ffc8] rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                    <div className="relative bg-[#0a0f0b] rounded-xl flex items-center p-1 border border-white/10 focus-within:border-[#7cba10]/50 transition-colors">
+                      <div className="pl-4 text-white/30">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <Input
+                        id="followers-input"
+                        type="number"
+                        placeholder="Ex: 50000 seguidores"
+                        className="border-none bg-transparent text-lg h-14 text-white placeholder:text-white/20 focus-visible:ring-0 shadow-none font-bold tracking-tight"
+                        value={followers}
+                        onChange={(e) => setFollowers(Number(e.target.value))}
+                        onKeyDown={(e) => e.key === "Enter" && handleNext()}
+                      />
+                      <Button
+                        onClick={handleNext}
+                        className="h-12 px-6 rounded-lg bg-[#7cba10] hover:bg-[#63960d] text-[#050505] font-bold text-base transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        disabled={!followers || !name}
+                      >
+                        <ArrowRight className="w-5 h-5" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -191,9 +220,11 @@ export default function FollowerPotentialCalculator() {
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-white/5 pb-6">
                  <div>
                    <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tighter">
-                     Análise de <span className="text-[#7cba10]">{formatNumber(f)}</span> seguidores
+                     Olá <span className="capitalize text-[#7cba10]">{name}</span>, aqui está o raio-x da sua base de <span className="text-white border-b-2 border-[#7cba10]/30">{formatNumber(f)}</span> seguidores
                    </h2>
-                   <p className="text-white/40 text-sm mt-1 font-medium">Potencial de faturamento vs. desperdício atual</p>
+                   <p className="text-white/40 text-sm mt-2 font-medium">
+                     Com base nas métricas de mercado da média dos nossos clientes, chegamos a estes números de potencial desperdiçado:
+                   </p>
                  </div>
               </div>
 
@@ -245,7 +276,7 @@ export default function FollowerPotentialCalculator() {
                         O Dinheiro que volta pro Bolso
                       </h3>
                       <p className="text-white/60 text-sm leading-relaxed">
-                        Selecione uma taxa conservadora. Esse é o valor líquido que entra no seu caixa <strong className="text-white">sem aumentar o tráfego</strong>, apenas recuperando quem quase comprou.
+                        Selecione uma taxa de conversão conservadora. Esse é o valor líquido que entra no seu caixa <strong className="text-white">sem aumentar o tráfego</strong>, apenas recuperando quem quase comprou.
                       </p>
                     </div>
 
@@ -316,8 +347,8 @@ export default function FollowerPotentialCalculator() {
                   </Button>
                 </a>
 
-                <p className="mt-6 text-[10px] text-white/20 max-w-lg mx-auto uppercase tracking-widest font-mono">
-                  * Números baseados na média de performance dos nossos clientes. Resultados podem variar conforme nicho e engajamento.
+                <p className="mt-8 text-[10px] text-white/20 max-w-lg mx-auto uppercase tracking-widest font-mono border-t border-white/5 pt-4">
+                  * Com base nas métricas de mercado da média dos nossos clientes, chegamos aos números apresentados acima. Resultados podem variar.
                 </p>
               </div>
 
